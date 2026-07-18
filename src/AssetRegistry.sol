@@ -6,7 +6,6 @@ pragma solidity ^0.8.24;
 ///         Deliberately simple: teaches state vars, mappings,
 ///         msg.sender, modifiers, and events in one file.
 contract AssetRegistry {
-
     // The address that deployed the contract (the "admin")
     address public owner;
 

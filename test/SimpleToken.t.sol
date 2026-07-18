@@ -37,13 +37,7 @@ contract SimpleTokenTest is Test {
 
     function test_TransferRevertsOnInsufficientBalance() public {
         vm.prank(alice); // alice has 0 tokens
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                SimpleToken.InsufficientBalance.selector,
-                0,
-                100
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(SimpleToken.InsufficientBalance.selector, 0, 100));
         bool success = token.transfer(bob, 100);
         success;
     }
@@ -79,13 +73,7 @@ contract SimpleTokenTest is Test {
         token.approve(alice, 50);
 
         vm.prank(alice);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                SimpleToken.InsufficientAllowance.selector,
-                50,
-                200
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(SimpleToken.InsufficientAllowance.selector, 50, 200));
         bool success = token.transferFrom(deployer, bob, 200);
         success;
     }
