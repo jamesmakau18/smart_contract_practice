@@ -29,19 +29,11 @@ contract SimpleToken {
 
     // ── Events ─────────────────────────────────────────────
     event Transfer(address indexed from, address indexed to, uint256 amount);
-    event Approval(
-        address indexed owner,
-        address indexed spender,
-        uint256 amount
-    );
+    event Approval(address indexed owner, address indexed spender, uint256 amount);
     event Minted(address indexed to, uint256 amount);
 
     // ── Constructor ────────────────────────────────────────
-    constructor(
-        string memory _name,
-        string memory _symbol,
-        uint256 _initialSupply
-    ) {
+    constructor(string memory _name, string memory _symbol, uint256 _initialSupply) {
         name = _name;
         symbol = _symbol;
         owner = msg.sender;
@@ -61,10 +53,7 @@ contract SimpleToken {
     // ── Core transfer logic ────────────────────────────────
 
     /// @notice Move tokens directly from the caller to `to`.
-    function transfer(
-        address to,
-        uint256 amount
-    ) public returns (bool success) {
+    function transfer(address to, uint256 amount) public returns (bool success) {
         if (to == address(0)) revert ZeroAddress();
 
         uint256 senderBalance = balanceOf[msg.sender];
@@ -81,10 +70,7 @@ contract SimpleToken {
 
     /// @notice Allow `spender` to move up to `amount` tokens on your behalf.
     /// @dev This does NOT move any tokens itself — it just grants permission.
-    function approve(
-        address spender,
-        uint256 amount
-    ) public returns (bool success) {
+    function approve(address spender, uint256 amount) public returns (bool success) {
         if (spender == address(0)) revert ZeroAddress();
 
         allowance[msg.sender][spender] = amount;
@@ -98,11 +84,7 @@ contract SimpleToken {
     /// @dev This is how DEXs, marketplaces, and staking contracts move
     ///      YOUR tokens without needing your private key — you approve
     ///      them once, then they call transferFrom on your behalf.
-    function transferFrom(
-        address from,
-        address to,
-        uint256 amount
-    ) public returns (bool success) {
+    function transferFrom(address from, address to, uint256 amount) public returns (bool success) {
         if (to == address(0)) revert ZeroAddress();
 
         uint256 currentAllowance = allowance[from][msg.sender];
@@ -150,22 +132,17 @@ contract SimpleToken {
     /// @notice A `pure` function: touches NO blockchain state at all —
     ///         just pure computation on the inputs you give it.
     ///         Notice it doesn't read balanceOf, totalSupply, anything.
-    function calculateFee(
-        uint256 amount,
-        uint256 feeBasisPoints
-    ) public pure returns (uint256 fee) {
+    function calculateFee(uint256 amount, uint256 feeBasisPoints) public pure returns (uint256 fee) {
         // basis points: 100 = 1%, 250 = 2.5%, etc.
         return (amount * feeBasisPoints) / 10_000;
     }
 
     /// @notice Example of combining a pure calculation with a real transfer —
     ///         transfers `amount` minus a fee, sending the fee to `feeCollector`.
-    function transferWithFee(
-        address to,
-        uint256 amount,
-        address feeCollector,
-        uint256 feeBasisPoints
-    ) public returns (bool success) {
+    function transferWithFee(address to, uint256 amount, address feeCollector, uint256 feeBasisPoints)
+        public
+        returns (bool success)
+    {
         uint256 fee = calculateFee(amount, feeBasisPoints);
         uint256 amountAfterFee = amount - fee;
 
