@@ -1,66 +1,79 @@
-## Foundry
+# Smart Contract Practice — Asset Registry & Token System
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+A set of Solidity contracts built and tested with [Foundry](https://book.getfoundry.sh/), focused on the core primitives behind real-world asset (RWA) tokenization: ownership tracking, access control, transfers, and allowances.
 
-Foundry consists of:
+Built as hands-on practice ahead of a Senior Blockchain Engineer role involving Ethereum-based tokenized asset marketplaces.
 
-- **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
-- **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
-- **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
-- **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+## Contracts
 
-## Documentation
+### `AssetRegistry.sol`
+A minimal on-chain registry mapping asset IDs to owner addresses — the core primitive behind representing real-world assets on-chain.
 
-https://book.getfoundry.sh/
+- Admin-gated asset registration (`onlyOwner` modifier)
+- Owner-gated asset transfers (only the current owner of a specific asset can transfer it)
+- Full event coverage (`AssetRegistered`, `AssetTransferred`) for off-chain indexing
+- Guards against duplicate registration and zero-address transfers
 
-## Usage
+### `SimpleToken.sol`
+A hand-built, ERC-20-style token implementation (not inheriting OpenZeppelin, to demonstrate first-principles understanding of the standard).
 
-### Build
+- Balances, transfers, and the `approve` / `transferFrom` allowance pattern
+- Gas-efficient custom errors (`InsufficientBalance`, `InsufficientAllowance`, `NotOwner`, `ZeroAddress`) instead of string-based `require()`
+- Owner-gated minting
+- Demonstrates `view` vs `pure` function semantics (`isRich`, `calculateFee`)
+- `transferWithFee` — a composed function showing safe internal-call patterns (checks return values, follows Checks-Effects-Interactions ordering)
+
+## Test Coverage
+
+Both contracts have full Foundry test suites covering the happy path, access control failures, and edge cases (duplicate registration, zero-address transfers, insufficient allowance/balance).
 
 ```shell
-$ forge build
+forge test -vvv
+```
+
+19 tests passing across both contracts.
+
+## Live Deployments — Sepolia Testnet
+
+| Contract | Address | Etherscan |
+|---|---|---|
+| AssetRegistry | `0xe70F53Ba0B894065940567F4F3e96d0b8B1D334c` | [View on Sepolia Etherscan](https://sepolia.etherscan.io/address/0xe70F53Ba0B894065940567F4F3e96d0b8B1D334c) |
+| SimpleToken | `0x4A04bC8d1d91B7b6C49e3bcfaA6A816727D62243` | [View on Sepolia Etherscan](https://sepolia.etherscan.io/address/0x4A04bC8d1d91B7b6C49e3bcfaA6A816727D62243) |
+
+## Tech Stack
+
+- **Solidity** `^0.8.24` (compiled with `0.8.35`)
+- **Foundry** (Forge for testing/deployment, `forge-std` for cheatcodes/assertions)
+- **Sepolia** testnet, deployed via Alchemy RPC
+
+## Local Setup
+
+### Build
+```shell
+forge build
 ```
 
 ### Test
-
 ```shell
-$ forge test
+forge test -vvv
 ```
 
-### Format
-
-```shell
-$ forge fmt
+### Deploy (Sepolia)
+Requires a `.env` file (not committed — see `.gitignore`) with:
+```
+SEPOLIA_RPC_URL=your_alchemy_or_infura_sepolia_url
+PRIVATE_KEY=0xyour_test_wallet_private_key
 ```
 
-### Gas Snapshots
-
+Then:
 ```shell
-$ forge snapshot
+source .env
+forge script script/Deploy.s.sol:DeployScript --rpc-url $SEPOLIA_RPC_URL --broadcast
 ```
 
-### Anvil
+## Author
 
-```shell
-$ anvil
-```
+**James Makau**
+Senior Software Development Engineer — 10+ years in fintech, cloud-native systems, and AI-augmented engineering, now building toward blockchain/smart contract engineering.
 
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+[LinkedIn](#) · jamesmakau18@gmail.com
