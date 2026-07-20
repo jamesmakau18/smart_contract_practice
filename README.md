@@ -103,4 +103,4 @@ forge script script/Deploy.s.sol:DeployScript --rpc-url $SEPOLIA_RPC_URL --broad
 **James Makau**
 Senior Software Development Engineer — 10+ years in fintech, cloud-native systems, and AI-augmented engineering, now building toward blockchain/smart contract engineering.
 
-[LinkedIn](#) · jamesmakau18@gmail.com
+[LinkedIn](https://www.linkedin.com/in/james-makau-17b90a146/) · jamesmakau18@gmail.com
