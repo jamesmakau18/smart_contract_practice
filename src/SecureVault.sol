@@ -31,7 +31,7 @@ contract SecureVault is ReentrancyGuard {
         // ── EFFECT happens BEFORE interaction — the actual fix ──
         balances[msg.sender] = 0;
 
-        (bool success, ) = msg.sender.call{value: amount}("");
+        (bool success,) = msg.sender.call{value: amount}("");
         require(success, "Transfer failed");
     }
 

@@ -23,7 +23,7 @@ contract VulnerableVault {
         require(amount > 0, "Nothing to withdraw");
 
         // ── INTERACTION happens BEFORE effects — this is the bug ──
-        (bool success, ) = msg.sender.call{value: amount}("");
+        (bool success,) = msg.sender.call{value: amount}("");
         require(success, "Transfer failed");
 
         // By the time execution reaches this line on the ORIGINAL call,
