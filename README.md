@@ -40,22 +40,53 @@ A deliberate, hands-on demonstration of **reentrancy** — the vulnerability cla
 
 These two contracts are intentionally kept side by side, unpatched, as a permanent "before/after" reference — `VulnerableVault` is never meant to be fixed or deployed with real value; it exists purely to prove the exploit and contrast it against the corrected pattern.
 
+### Security case study — `TxOriginWallet.sol` vs `SecureWallet.sol`
+Demonstrates the **`tx.origin` phishing vulnerability** — a common Solidity access-control mistake.
+
+- **`TxOriginWallet.sol`** — authorizes withdrawals using `tx.origin == owner` instead of `msg.sender == owner`.
+- **`PhishingAttacker.sol`** — a malicious contract disguised as something innocuous (`claimReward()`). When the real owner is tricked into calling it, `tx.origin` still equals the owner throughout the entire call chain — even though the owner never called the wallet directly — letting the attacker drain it.
+- **`SecureWallet.sol`** — the fix: checks `msg.sender` instead, which correctly resolves to the *immediate* caller at each hop, not the original transaction initiator.
+
+**Rule demonstrated:** never use `tx.origin` for authorization, without exception.
+
+### Security case study — `UncheckedCounter.sol` vs `CheckedCounter.sol`
+Demonstrates **integer underflow** via an `unchecked` block.
+
+- **`UncheckedCounter.sol`** — spends a user's points inside `unchecked { }`, opting out of Solidity 0.8+'s default overflow/underflow protection. Spending more points than a user has doesn't revert — it wraps around to `type(uint256).max`, silently granting an almost-infinite balance.
+- **`CheckedCounter.sol`** — the fix: simply removing `unchecked`. Solidity 0.8+'s built-in protection reverts automatically on underflow, with no extra code required.
+
+**Rule demonstrated:** `unchecked` blocks trade safety for gas savings — only ever justified when the arithmetic is provably safe, and easy to get wrong.
+
+### Security case study — `GuessingGame.sol` vs `CommitRevealGame.sol`
+Demonstrates **front-running** — not a code bug, but a consequence of how public blockchains work: pending transactions are visible in the mempool before confirmation.
+
+- **`GuessingGame.sol`** — accepts a plaintext guess. Anyone watching the mempool (e.g. `FrontRunnerBot.sol`) can see a correct guess about to be submitted and resubmit it with higher gas to get mined first, stealing the prize.
+- **`CommitRevealGame.sol`** — the fix: a two-phase commit-reveal scheme. Players first submit a hash of their guess plus a secret salt (unreadable in the mempool), then reveal the real answer later, checked against their earlier commitment. By the time the real answer is visible, front-running it is no longer possible.
+
+**Rule demonstrated:** sensitive on-chain actions that reveal information (guesses, bids, orders) need commit-reveal or similar patterns — plaintext submission is inherently front-runnable.
+
 ## Test Coverage
 
-All contracts have full Foundry test suites covering the happy path, access control failures, and edge cases (duplicate registration, zero-address transfers, insufficient allowance/balance, compliance/pause enforcement).
+All contracts have full Foundry test suites covering the happy path, access control failures, and edge cases (duplicate registration, zero-address transfers, insufficient allowance/balance, compliance/pause enforcement, and four distinct exploit/fix pairs).
 
 ```shell
 forge test -vvvv
 ```
 
-**33 tests passing across 5 test suites**, including two tests that specifically prove security behavior rather than just feature correctness:
+**39 tests passing across 8 test suites**, including eight tests that specifically prove security behavior rather than just feature correctness:
 
 | Test | Contract | Proves |
 |---|---|---|
-| `test_ReentrancyDrainsVault` | `VulnerableVault` | The reentrancy exploit **succeeds** — a 1 ETH deposit drains the vault's full 5 ETH balance, ending with the attacker holding 6 ETH total. Expected outcome: **passes**, confirming the vulnerability is real. |
-| `test_ReentrancyAttackFailsAgainstSecureVault` | `SecureVault` | The identical attack pattern **fails** — the re-entrant call reverts with `ReentrancyGuardReentrantCall()`, and the outer transaction reverts with `"Transfer failed"`. Expected outcome: **passes**, confirming the fix holds. |
+| `test_ReentrancyDrainsVault` | `VulnerableVault` | Reentrancy **succeeds** — a 1 ETH deposit drains the vault's full 5 ETH balance. |
+| `test_ReentrancyAttackFailsAgainstSecureVault` | `SecureVault` | The identical attack **fails**, reverting via `ReentrancyGuardReentrantCall()`. |
+| `test_TxOriginPhishingDrainsWallet` | `TxOriginWallet` | The phishing trick **succeeds** — the owner unknowingly drains their own wallet via `tx.origin`. |
+| `test_SameTrickFailsAgainstMsgSenderCheck` | `SecureWallet` | The identical trick **fails** against a `msg.sender`-based check. |
+| `test_UnderflowWrapsToHugeNumber` | `UncheckedCounter` | Underflow **succeeds** — spending more than a balance wraps to `type(uint256).max`. |
+| `test_CheckedVersionRevertsOnUnderflow` | `CheckedCounter` | The identical call **reverts** cleanly under Solidity 0.8+'s default protection. |
+| `test_FrontRunnerStealsPrize` | `GuessingGame` | Front-running **succeeds** — a bot copies a plaintext guess and steals the prize. |
+| `test_CommitRevealPreventsFrontRunning` | `CommitRevealGame` | The identical attempt **fails** — a stolen answer has no matching prior commitment. |
 
-Note: both tests report `[PASS]` in Foundry's output — this reflects each test's *assertions* being correct, not that both contracts are safe. `VulnerableVault` remains permanently exploitable by design; only `SecureVault` is safe to use as a real pattern.
+Note: every "vulnerable" test reports `[PASS]` in Foundry's output — this reflects each test's *assertions* being correct (i.e. correctly proving the exploit works), not that the vulnerable contract is safe. Each vulnerable contract (`VulnerableVault`, `TxOriginWallet`, `UncheckedCounter`, `GuessingGame`) remains permanently exploitable by design, kept only as a documented "before" reference; only its paired "secure" contract reflects a safe, production-shaped pattern.
 
 ## Live Deployments — Sepolia Testnet
 
@@ -64,7 +95,7 @@ Note: both tests report `[PASS]` in Foundry's output — this reflects each test
 | AssetRegistry | `0xe70F53Ba0B894065940567F4F3e96d0b8B1D334c` | [View on Sepolia Etherscan](https://sepolia.etherscan.io/address/0xe70F53Ba0B894065940567F4F3e96d0b8B1D334c) |
 | SimpleToken | `0x4A04bC8d1d91B7b6C49e3bcfaA6A816727D62243` | [View on Sepolia Etherscan](https://sepolia.etherscan.io/address/0x4A04bC8d1d91B7b6C49e3bcfaA6A816727D62243) |
 
-*`RWAShareToken`, `VulnerableVault`, and `SecureVault` are covered by full Foundry test suites but kept as local/testnet-ready practice contracts, not yet deployed to Sepolia.*
+*`RWAShareToken` and all six security case-study contracts are covered by full Foundry test suites but kept as local/testnet-ready practice contracts, not yet deployed to Sepolia.*
 
 ## Tech Stack
 
@@ -102,5 +133,6 @@ forge script script/Deploy.s.sol:DeployScript --rpc-url $SEPOLIA_RPC_URL --broad
 
 **James Makau**
 Senior Software Development Engineer — 10+ years in fintech, cloud-native systems, and AI-augmented engineering, now building toward blockchain/smart contract engineering.
+
 
 [LinkedIn](https://www.linkedin.com/in/james-makau-17b90a146/) · jamesmakau18@gmail.com
