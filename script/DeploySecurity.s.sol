@@ -24,11 +24,7 @@ contract DeploySecurityScript is Script {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        RWAShareToken rwaToken = new RWAShareToken(
-            "Nairobi Office Tower Shares",
-            "NOTS",
-            deployer
-        );
+        RWAShareToken rwaToken = new RWAShareToken("Nairobi Office Tower Shares", "NOTS", deployer);
         console.log("RWAShareToken deployed at:", address(rwaToken));
 
         SecureVault secureVault = new SecureVault();
