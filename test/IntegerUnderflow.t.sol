@@ -3,24 +3,7 @@ pragma solidity ^0.8.24;
 
 import {Test, console} from "forge-std/Test.sol";
 import {UncheckedCounter} from "../src/UncheckedCounter.sol";
-
-/// @title CheckedCounter
-/// @notice The fix: simply remove the `unchecked` block. Solidity 0.8+
-///         then automatically reverts on underflow, with zero extra code
-///         needed — the language's default behavior IS the fix here.
-contract CheckedCounter {
-    mapping(address => uint256) public points;
-
-    function addPoints(address user, uint256 amount) external {
-        points[user] += amount;
-    }
-
-    function spendPoints(uint256 amount) external {
-        // No `unchecked` block — Solidity 0.8+ reverts automatically
-        // if this subtraction would go below zero.
-        points[msg.sender] -= amount;
-    }
-}
+import {CheckedCounter} from "../src/CheckedCounter.sol";
 
 contract IntegerUnderflowTest is Test {
     UncheckedCounter public vulnerable;

@@ -3,25 +3,7 @@ pragma solidity ^0.8.24;
 
 import {Test, console} from "forge-std/Test.sol";
 import {TxOriginWallet, PhishingAttacker} from "../src/TxOriginWallet.sol";
-
-/// @title SecureWallet
-/// @notice The fix: checks msg.sender (whoever called THIS function
-///         directly) instead of tx.origin (whoever started the whole
-///         transaction chain, however many hops away).
-contract SecureWallet {
-    address public owner;
-
-    constructor() {
-        owner = msg.sender;
-    }
-
-    function withdrawAll(address to) external {
-        require(msg.sender == owner, "Not authorized");
-        payable(to).transfer(address(this).balance);
-    }
-
-    receive() external payable {}
-}
+import {SecureWallet} from "../src/SecureWallet.sol";
 
 /// @title SecurePhishingAttacker
 /// @notice The IDENTICAL phishing trick, structurally, but aimed at

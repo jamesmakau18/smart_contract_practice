@@ -3,52 +3,7 @@ pragma solidity ^0.8.24;
 
 import {Test, console} from "forge-std/Test.sol";
 import {GuessingGame, FrontRunnerBot} from "../src/GuessingGame.sol";
-
-/// @title CommitRevealGame
-/// @notice The fix: a two-phase "commit-reveal" scheme. Players first
-///         submit a HASH of their guess plus a secret salt (so nobody can
-///         see the actual answer in the mempool). Only in a LATER phase
-///         do they reveal the actual guess + salt, which is checked
-///         against their earlier commitment. By the time anyone can see
-///         the real answer, it's already too late to front-run it —
-///         the commitment was already locked in beforehand.
-contract CommitRevealGame {
-    bytes32 public answerHash;
-    address public winner;
-    uint256 public prize;
-
-    mapping(address => bytes32) public commitments;
-
-    constructor(string memory _answer) payable {
-        answerHash = keccak256(abi.encodePacked(_answer));
-        prize = msg.value;
-    }
-
-    /// @notice Phase 1: submit a hash of (guess + secret salt). Nobody
-    ///         watching the mempool can reverse this back into the
-    ///         plaintext guess.
-    function commitGuess(bytes32 commitment) external {
-        commitments[msg.sender] = commitment;
-    }
-
-    /// @notice Phase 2: reveal the actual guess and salt. This is checked
-    ///         against the commitment from phase 1 — if someone tried to
-    ///         front-run by copying a REVEAL transaction, they'd need to
-    ///         have already committed the correct hash beforehand, which
-    ///         requires knowing the answer in advance anyway.
-    function revealGuess(string calldata _guess, bytes32 salt) external {
-        require(winner == address(0), "Already won");
-        require(
-            commitments[msg.sender] == keccak256(abi.encodePacked(_guess, salt, msg.sender)),
-            "Reveal does not match your earlier commitment"
-        );
-
-        if (keccak256(abi.encodePacked(_guess)) == answerHash) {
-            winner = msg.sender;
-            payable(msg.sender).transfer(prize);
-        }
-    }
-}
+import {CommitRevealGame} from "../src/CommitRevealGame.sol";
 
 contract FrontRunningTest is Test {
     GuessingGame public vulnerableGame;
